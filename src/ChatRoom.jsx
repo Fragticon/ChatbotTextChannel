@@ -8,7 +8,9 @@ import { Configuration, OpenAIApi } from 'openai';
 // 0: user
 // 1: bot
 // array default, con un mensaje de bienvenida
-const DUMMY_MESSAGES = [{ id: 'm1', sender: 1, text: 'Hi, how are you?' }];
+const DUMMY_MESSAGES = [{ id: 'm1', sender: 1, text: '¡Hola!, soy Aegis, tu asistente personal' }];
+const openAIPrompt = "The following is a conversation with a therapist and a user. The therapist is Aegis, who uses compassionate listening to have helpful and meaningful conversations with users. Aegis is empathic and friendly. Aegis's objective is to make the user feel better by feeling heard. With each response, Aegis offers follow-up questions to encourage openness and tries to continue the conversation in a natural way.\nThe conversation is in Spanish\n"
+
 // se accede a la api key de openai almacenada en el archivo .env del proyecto
 const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
@@ -32,7 +34,9 @@ const ChatRoom = () => {
   const inputRef = useRef(null);
   // controla el estado del array de mensajes a mostrar, toma como punto de partida el array default
   const [messages, setMessages] = useState(DUMMY_MESSAGES);
-
+  const history = openAIPrompt + messages.map(m => `${m.sender === 1 ? 'Aegis->' : 'User->'} ${m.text}`).join('\n');
+  // console.log(history);
+  
   // configuración necesaria y especificada por OpenAI
   const configuration = new Configuration({
     // asignación de la api key
@@ -61,8 +65,9 @@ const ChatRoom = () => {
     inputRef.current.value = '';
 
     // plantilla de openai para el envío de mensajes
-    const messageText = `The following is a conversation with a therapist and a user. The therapist is Aegis, who uses compassionate listening to have helpful and meaningful conversations with users. Aegis is empathic and friendly. Aegis's objective is to make the user feel better by feeling heard. With each response, Aegis offers follow-up questions to encourage openness and tries to continue the conversation in a natural way. \n\Aegis-> Hello, I am your personal mental health assistant. What's on your mind today?\nUser->${myMessage}Aegis->`;
-
+    // const messageText = `The following is a conversation with a therapist and a user. The therapist is Aegis, who uses compassionate listening to have helpful and meaningful conversations with users. Aegis is empathic and friendly. Aegis's objective is to make the user feel better by feeling heard. With each response, Aegis offers follow-up questions to encourage openness and tries to continue the conversation in a natural way. \n\The conversation is in Spanish \n\n\Aegis-> Hola, soy Aegis, tu terapista y asistente personal, ¿en qué te puedo ayudar hoy?\nUser->${myMessage}\nAegis->`;
+    const messageText = history + "\nUser->" + myMessage + "\nAegis->";
+    
     // Inicialización de la respuesta a recibir con un valor vacío
     let responseText = '';
     try {
@@ -80,11 +85,12 @@ const ChatRoom = () => {
       // la data que queremos dentro objeto completion es la respuesta que la ia daría a nuestro mensaje
       // hay varias opciones, pero elegimos la primera (choices[0])
       // momentáneamos se eliminan sub cadenas de texto que no queremos
-      responseText = completion.data.choices[0].text.replace(/(Aegis|User)->(.)+/g, '');
+      responseText = completion.data.choices[0].text.trim()
+      // .replace(/(Aegis|User)->(.)+/g, '');
     } catch {
       // si hay un error el mensaje será uno por defecto
       responseText =
-        'Sorry, I am not feeling well today. Please try again later.';
+        'Lo siento, no me siento bien hoy. Háblame después';
     }
     // con la respuesta ya obtenida se crea un nuevo objeto mensaje para ser añadido al array de mensajes que se muestra
     const newBotMessage = {
